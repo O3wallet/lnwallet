@@ -4,8 +4,8 @@ import spray.json._
 import android.database.sqlite._
 import com.lightning.walletapp.ln.PaymentInfo._
 import com.lightning.walletapp.lnutils.ImplicitJsonFormats._
-import com.lightning.walletapp.ln.Tools.{random, runAnd}
 import com.lightning.walletapp.lnutils.olympus.CloudData
+import com.lightning.walletapp.ln.Tools.runAnd
 import android.content.Context
 import android.net.Uri
 
@@ -158,7 +158,7 @@ class LNOpenHelper(context: Context, name: String)
   // Note: BinaryData and PublicKey should always yield raw strings for this to work
   def change(sql: String, params: Any*) = base.execSQL(sql, params.map(_.toString).toArray)
   def select(sql: String, params: Any*) = base.rawQuery(sql, params.map(_.toString).toArray)
-  def sqlPath(tbl: String) = Uri parse s"sqlite://com.lightning.walletapp/table/$tbl"
+  def sqlPath(tbl: String) = Uri parse s"sqlite://com.lightning.wallet/table/$tbl"
 
   def txWrap(run: => Unit) = try {
     runAnd(base.beginTransaction)(run)
@@ -176,13 +176,9 @@ class LNOpenHelper(context: Context, name: String)
     dbs execSQL OlympusLogTable.createSql
     dbs execSQL OlympusTable.createSql
 
-    // Randomize an order of two available default servers
-    val (ord1, ord2) = if (random.nextBoolean) ("0", "1") else ("1", "0")
     val emptyData = CloudData(info = None, tokens = Vector.empty, acts = Vector.empty).toJson.toString
-    val dev1: Array[AnyRef] = Array("server-1", "https://a.lightning-wallet.com:9103", emptyData, "1", ord1, "0")
-    val dev2: Array[AnyRef] = Array("server-2", "https://b.lightning-wallet.com:9103", emptyData, "0", ord2, "1")
-    dbs.execSQL(OlympusTable.newSql, dev1)
-    dbs.execSQL(OlympusTable.newSql, dev2)
+    val dev: Array[AnyRef] = Array("test-server-1", "http://107.174.60.15:9003", emptyData, "1", "0", "0")
+    dbs.execSQL(OlympusTable.newSql, dev)
   }
 
   def onUpgrade(dbs: SQLiteDatabase, v0: Int, v1: Int) = {
