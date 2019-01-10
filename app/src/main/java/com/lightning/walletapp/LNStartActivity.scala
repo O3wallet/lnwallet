@@ -139,13 +139,14 @@ class FragLNStart extends Fragment with SearchBar with HumanTimeDisplay { me =>
     val lnStartNodesList = view.findViewById(R.id.lnStartNodesList).asInstanceOf[ListView]
 
     def funderInfo(wrk: WSWrap, color: Int, text: Int) = host UITask {
-      // Show extended remote funding info here so user knows what's up
+      val fundingAmount = denom parsedWithSign wrk.params.start.fundingAmount
+      val fundingFee = denom parsedWithSign wrk.params.fee
+      val expires = me time new Date(wrk.params.expiry)
 
       externalFundWrap setVisibility View.VISIBLE
       externalFundWrap setBackgroundColor getResources.getColor(color, null)
       externalFundInfo setText host.getString(text).format(wrk.params.start.host,
-        me time new Date(wrk.params.expiry), denom parsedWithSign wrk.params.fee,
-        denom parsedWithSign wrk.params.start.fundingAmount).html
+        expires, fundingAmount, fundingFee).html
     }
 
     setExternalFunder = started => {

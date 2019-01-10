@@ -13,6 +13,7 @@ import com.lightning.walletapp.ln.Tools._
 import com.lightning.walletapp.ln.Channel._
 import com.lightning.walletapp.ln.LNParams._
 import com.lightning.walletapp.ln.PaymentInfo._
+import com.lightning.walletapp.lnutils.JsonHttpUtils._
 import com.google.common.util.concurrent.Service.State._
 import com.lightning.walletapp.lnutils.ImplicitJsonFormats._
 import com.lightning.walletapp.lnutils.ImplicitConversions._
@@ -31,7 +32,6 @@ import com.lightning.walletapp.ln.wire.LightningMessageCodecs.revocationInfoCode
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
 import com.lightning.walletapp.lnutils.olympus.OlympusWrap
 import com.lightning.walletapp.lnutils.olympus.TxUploadAct
-import concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.bitcoinj.wallet.KeyChain.KeyPurpose
 import org.bitcoinj.net.discovery.DnsDiscovery
@@ -40,7 +40,6 @@ import java.util.Collections.singletonList
 import fr.acinq.bitcoin.Hash.Zeroes
 import org.bitcoinj.uri.BitcoinURI
 import java.net.InetSocketAddress
-import scala.concurrent.Future
 import scodec.bits.BitVector
 import android.widget.Toast
 import scodec.DecodeResult
@@ -113,6 +112,7 @@ class WalletApp extends Application { me =>
     private[this] val prefixes = PaymentRequest.prefixes.values mkString "|"
     private[this] val lnUrl = s"(?im).*?(lnurl)([0-9]{1,}[a-z0-9]+){1}".r.unanchored
     private[this] val lnPayReq = s"(?im).*?($prefixes)([0-9]{1,}[a-z0-9]+){1}".r.unanchored
+    private[this] val funder = "(lnbcfunder|lntbfunder|lnbcrtfunder):([a-z0-9]+)".r
     private[this] val shortNodeLink = "([a-fA-F0-9]{66})@([a-zA-Z0-9:\\.\\-_]+)".r
     val nodeLink = "([a-fA-F0-9]{66})@([a-zA-Z0-9:\\.\\-_]+):([0-9]+)".r
 
@@ -137,6 +137,7 @@ class WalletApp extends Application { me =>
       case shortNodeLink(key, host) => mkNodeAnnouncement(PublicKey(key), new InetSocketAddress(host, 9735), host)
       case lnPayReq(prefix, data) => PaymentRequest.read(s"$prefix$data")
       case lnUrl(prefix, data) => LNUrl.fromBech32(s"$prefix$data")
+      case funder(_, paramsHex) => to[Started](paramsHex.hex2asci)
       case _ => toAddress(rawText)
     }
   }
